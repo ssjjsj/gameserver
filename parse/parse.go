@@ -7,7 +7,7 @@ const (
 	WaitForData = 1
 )
 
-type Parse struct
+type Parser struct
 {
 	curData []byte
 	curHeadLength int
@@ -17,33 +17,61 @@ type Parse struct
 }
 
 
-func (p Parse) parse(data []byte, num int) ([]byte) {
+func (p Parser) parse(data []byte, num int) ([]byte, int) {
 	var resultData  []byte
+	left := 0
 	if (p.curStatus == WaitForLength){
 		if (num + p.curHeadLength >= 4){
 			lengthArray := data[0:4]
-			p.needDataLength = binary.BigEndian.Uint32(lengthArray)
+			length := binary.BigEndian.Uint32(lengthArray)
+			p.needDataLength = int(length)
 			p.curStatus = WaitForData
 			p.curHeadLength = 0
+			left = num - 4 + p.curHeadLength
 		}else
 		{
 			p.curHeadLength = num
+			left = 0
 		}
 	}else{
 		if (p.curDataLength + num >= p.needDataLength){
-			p.curData = append(p.curData, data[0:p.needDataLength])
+			p.curData = appendData(p.curData, data, 0, p.needDataLength)
 			p.curStatus = WaitForLength
 			resultData = p.curData
+			left = num - p.needDataLength
 		}else{
-			p.curData = append(p.curData, data[0:num])
+			p.curData = appendData(p.curData, data, 0, num)
 			p.curDataLength = p.curDataLength + num
+			left = 0
 		}
 	}
-	return resultData
+	return resultData, left
 }
 
 
-func appendData(ta)
+func (p Parser) Parse(data []byte, num int) ([][]byte){
+	var result [][]byte 
+	
+	resultData, left := p.parse(data, num)
+	for (resultData != nil && left>0){
+		if result == nil {
+			result = make([][]byte, 1)
+		}
+		result = append(result, resultData)
+		start := num-left+1
+		resultData, left = p.parse(data[start:num], num)
+	}
+
+	return result
+}
+
+
+func appendData(target []byte, source []byte, start int, end int) ([]byte){
+	for i:=start; i<end; i++{
+		target = append(target, source[i])
+	}
+	return target
+}
 
 
 
