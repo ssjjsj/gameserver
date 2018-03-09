@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
+	"encoding/binary"
 	"fmt"
 	"encoding/json"
-	"encoding/binary"
 )
 
 const (
@@ -29,39 +28,48 @@ type Person struct{
 }
 
 
-func (p Parser) parse(data []byte, num int) ([]byte, int) {
+func (p *Parser) parse(data []byte, num int) ([]byte, int) {
+	//fmt.Println(num)
 	var resultData  []byte
 	left := 0
+	fmt.Printf("start curStatus:%d\n", p.curStatus)
 	if (p.curStatus == WaitForLength){
+		fmt.Println("WaitForHead")
 		if (num + p.curHeadLength >= 4){
-			lengthArray := data[0:4]
-			length := binary.BigEndian.Uint32(lengthArray)
+			length := binary.BigEndian.Uint32(data[0:4])
+			fmt.Println(data[0:4])
+			fmt.Println(length)
 			p.needDataLength = int(length)
 			p.curStatus = WaitForData
 			p.curHeadLength = 0
 			left = num - 4 + p.curHeadLength
+			if p.curData == nil {
+				p.curData = make([]byte, p.needDataLength)
+			}
 		}else
 		{
 			p.curHeadLength = num
 			left = 0
 		}
 	}else{
+		fmt.Println("WaitForData")
 		if (p.curDataLength + num >= p.needDataLength){
-			p.curData = appendData(p.curData, data, 0, p.needDataLength)
+			p.curData = append(p.curData, data[0:p.needDataLength]...)
 			p.curStatus = WaitForLength
 			resultData = p.curData
 			left = num - p.needDataLength
 		}else{
-			p.curData = appendData(p.curData, data, 0, num)
+			p.curData = append(p.curData, data[0:num]...)
 			p.curDataLength = p.curDataLength + num
 			left = 0
 		}
 	}
+	fmt.Printf("curStatus:%d\n", p.curStatus)
 	return resultData, left
 }
 
 
-func (p Parser) Parse(data []byte, num int) ([][]byte){
+func (p *Parser) Parse(data []byte, num int) ([][]byte){
 	var result [][]byte 
 	
 	resultData, left := p.parse(data, num)
@@ -73,27 +81,20 @@ func (p Parser) Parse(data []byte, num int) ([][]byte){
 	}
 
 
+	fmt.Printf("left:%d\n", left)
 	for (left>0){
+		start := num-left+1
+		resultData, left = p.parse(data[start:num], left)
+		fmt.Printf("left:%d\n", left)
 		if (resultData != nil){
 			if result == nil {
 				result = make([][]byte, 1)
 			}
 			result = append(result, resultData)
 		}
-		result = append(result, resultData)
-		start := num-left+1
-		resultData, left = p.parse(data[start:num], num)
 	}
 
 	return result
-}
-
-
-func appendData(target []byte, source []byte, start int, end int) ([]byte){
-	for i:=start; i<end; i++{
-		target = append(target, source[i])
-	}
-	return target
 }
 
 
@@ -104,9 +105,11 @@ func main(){
 	json.Unmarshal(jsonData, &grid)
 
 	packet := make([]byte, 0)
-	b_buf := bytes.NewBuffer([]byte{})  
-    binary.Write(b_buf, binary.BigEndian, len(jsonData))  
-	packet = append(packet, b_buf.Bytes()...)
+	lengthArray := make([]byte, 4)
+	binary.BigEndian.PutUint32(lengthArray, uint32(len(jsonData)))
+	fmt.Println(lengthArray)
+	fmt.Println(len(jsonData))
+	packet = append(packet, lengthArray...)
 	packet = append(packet, jsonData...)
 
 	var p Parser
@@ -114,6 +117,7 @@ func main(){
 
 	for i:=0; i<len(result); i++{
 		data := result[i]
+		fmt.Printf("result length:%d\n", len(data))
 		var person Person
 		json.Unmarshal(data, &person)
 
