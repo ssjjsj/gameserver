@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"encoding/json"
+	"encoding/binary"
+	"gameserver/parse/parse"
 )
 
 type Person struct{
@@ -42,6 +45,14 @@ func main(){
 	jsonData := []byte(`{"Name":"Jason","Age": 22, "Location":"hangzhou"}`)
 	var grid Person
 	json.Unmarshal(jsonData, &grid)
+
+	packet := make([]byte, 0)
+	b_buf := bytes.NewBuffer([]byte{})  
+    binary.Write(b_buf, binary.BigEndian, len(jsonData))  
+	packet = append(packet, b_buf.Bytes()...)
+	packet = append(packet, jsonData...)
+
+
 
 	fmt.Printf("Name:%s\n", grid.Name)
 	fmt.Printf("Age:%d\n", grid.Age)

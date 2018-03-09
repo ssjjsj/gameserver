@@ -1,6 +1,11 @@
-package parse
+package main
 
-import "encoding/binary"
+import (
+	"bytes"
+	"fmt"
+	"encoding/json"
+	"encoding/binary"
+)
 
 const (
 	WaitForLength = 0
@@ -14,6 +19,13 @@ type Parser struct
 	curDataLength int
 	curStatus int
 	needDataLength int
+}
+
+
+type Person struct{
+	Name string
+	Age int
+	Location string
 }
 
 
@@ -53,9 +65,20 @@ func (p Parser) Parse(data []byte, num int) ([][]byte){
 	var result [][]byte 
 	
 	resultData, left := p.parse(data, num)
-	for (resultData != nil && left>0){
+	if (resultData != nil){
 		if result == nil {
 			result = make([][]byte, 1)
+		}
+		result = append(result, resultData)
+	}
+
+
+	for (left>0){
+		if (resultData != nil){
+			if result == nil {
+				result = make([][]byte, 1)
+			}
+			result = append(result, resultData)
 		}
 		result = append(result, resultData)
 		start := num-left+1
@@ -71,6 +94,33 @@ func appendData(target []byte, source []byte, start int, end int) ([]byte){
 		target = append(target, source[i])
 	}
 	return target
+}
+
+
+
+func main(){
+	jsonData := []byte(`{"Name":"Jason","Age": 22, "Location":"hangzhou"}`)
+	var grid Person
+	json.Unmarshal(jsonData, &grid)
+
+	packet := make([]byte, 0)
+	b_buf := bytes.NewBuffer([]byte{})  
+    binary.Write(b_buf, binary.BigEndian, len(jsonData))  
+	packet = append(packet, b_buf.Bytes()...)
+	packet = append(packet, jsonData...)
+
+	var p Parser
+	result := p.Parse(packet, len(packet))
+
+	for i:=0; i<len(result); i++{
+		data := result[i]
+		var person Person
+		json.Unmarshal(data, &person)
+
+		fmt.Printf("Name:%s\n", person.Name)
+		fmt.Printf("Age:%d\n", person.Age)
+		fmt.Printf("Location:%s\n", person.Location)
+	}
 }
 
 
