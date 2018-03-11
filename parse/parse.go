@@ -30,21 +30,18 @@ type Person struct{
 
 func (p *Parser) parse(data []byte, num int) ([]byte, int) {
 	//fmt.Println(num)
-	var resultData  []byte
+	var resultData  []byte = nil
 	left := 0
-	fmt.Printf("start curStatus:%d\n", p.curStatus)
 	if (p.curStatus == WaitForLength){
 		fmt.Println("WaitForHead")
 		if (num + p.curHeadLength >= 4){
 			length := binary.BigEndian.Uint32(data[0:4])
-			fmt.Println(data[0:4])
-			fmt.Println(length)
 			p.needDataLength = int(length)
 			p.curStatus = WaitForData
 			p.curHeadLength = 0
 			left = num - 4 + p.curHeadLength
 			if p.curData == nil {
-				p.curData = make([]byte, p.needDataLength)
+				p.curData = make([]byte, 0)
 			}
 		}else
 		{
@@ -64,7 +61,6 @@ func (p *Parser) parse(data []byte, num int) ([]byte, int) {
 			left = 0
 		}
 	}
-	fmt.Printf("curStatus:%d\n", p.curStatus)
 	return resultData, left
 }
 
@@ -74,22 +70,22 @@ func (p *Parser) Parse(data []byte, num int) ([][]byte){
 	
 	resultData, left := p.parse(data, num)
 	if (resultData != nil){
+		fmt.Printf("get a resultData 1\n")
 		if result == nil {
-			result = make([][]byte, 1)
+			result = make([][]byte, 0)
 		}
 		result = append(result, resultData)
 	}
 
 
-	fmt.Printf("left:%d\n", left)
 	for (left>0){
-		start := num-left+1
+		start := num-left
 		resultData, left = p.parse(data[start:num], left)
-		fmt.Printf("left:%d\n", left)
 		if (resultData != nil){
 			if result == nil {
-				result = make([][]byte, 1)
+				result = make([][]byte, 0)
 			}
+			fmt.Printf("get a resultData 2\n")
 			result = append(result, resultData)
 		}
 	}
@@ -111,13 +107,17 @@ func main(){
 	fmt.Println(len(jsonData))
 	packet = append(packet, lengthArray...)
 	packet = append(packet, jsonData...)
+	fmt.Println(packet)
 
 	var p Parser
 	result := p.Parse(packet, len(packet))
 
 	for i:=0; i<len(result); i++{
 		data := result[i]
-		fmt.Printf("result length:%d\n", len(data))
+		//fmt.Printf(string(data))
+		fmt.Printf("data of result\n")
+		fmt.Println(data)
+		fmt.Println(jsonData)
 		var person Person
 		json.Unmarshal(data, &person)
 
