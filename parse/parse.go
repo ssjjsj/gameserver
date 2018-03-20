@@ -1,9 +1,8 @@
-package main
+package parse
 
 import (
 	"encoding/binary"
 	"fmt"
-	"encoding/json"
 )
 
 const (
@@ -11,41 +10,56 @@ const (
 	WaitForData = 1
 )
 
+var headLength int = 4
+
 type Parser struct
 {
 	curData []byte
 	curHeadLength int
+	curHeadData []byte
 	curDataLength int
 	curStatus int
 	needDataLength int
 }
 
 
-type Person struct{
-	Name string
-	Age int
-	Location string
+type PkgData struct{
+	Id int
+	Data []byte
 }
 
 
-func (p *Parser) parse(data []byte, num int) ([]byte, int) {
+func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 	//fmt.Println(num)
-	var resultData  []byte = nil
+	var resultData *PkgData = nil
 	left := 0
 	if (p.curStatus == WaitForLength){
 		fmt.Println("WaitForHead")
-		if (num + p.curHeadLength >= 4){
-			length := binary.BigEndian.Uint32(data[0:4])
+		if (num + p.curHeadLength >= headLength){
+			needHeadDataLength := headLength - p.curHeadLength
+			if p.curHeadData == nil {
+				p.curHeadData = make([]byte, 0)
+			}
+			for index:=0; index<needHeadDataLength; index++{
+				p.curHeadData = append(p.curHeadData, data[index]) 
+			}
+		
+			length := binary.LittleEndian.Uint32(p.curHeadData[0:4])
+			fmt.Printf("need data:%d\n", length)
 			p.needDataLength = int(length)
 			p.curStatus = WaitForData
 			p.curHeadLength = 0
-			left = num - 4 + p.curHeadLength
+			left = num - headLength + p.curHeadLength
 			if p.curData == nil {
 				p.curData = make([]byte, 0)
 			}
 		}else
 		{
-			p.curHeadLength = num
+			if p.curHeadData == nil {
+				p.curHeadData = make([]byte, 0)
+			}
+			p.curHeadData = append(p.curHeadData, data...)
+			p.curHeadLength += num
 			left = 0
 		}
 	}else{
@@ -53,7 +67,9 @@ func (p *Parser) parse(data []byte, num int) ([]byte, int) {
 		if (p.curDataLength + num >= p.needDataLength){
 			p.curData = append(p.curData, data[0:p.needDataLength]...)
 			p.curStatus = WaitForLength
-			resultData = p.curData
+			resultData = new(PkgData)
+			resultData.Id = int(binary.LittleEndian.Uint32(p.curData[:4]))
+			resultData.Data = p.curData[4:len(p.curData)]
 			left = num - p.needDataLength
 		}else{
 			p.curData = append(p.curData, data[0:num]...)
@@ -65,14 +81,14 @@ func (p *Parser) parse(data []byte, num int) ([]byte, int) {
 }
 
 
-func (p *Parser) Parse(data []byte, num int) ([][]byte){
-	var result [][]byte 
+func (p *Parser) Parse(data []byte, num int) ([]*PkgData){
+	var result []*PkgData 
 	
 	resultData, left := p.parse(data, num)
 	if (resultData != nil){
-		fmt.Printf("get a resultData 1\n")
+		//fmt.Printf("get a resultData 1\n")
 		if result == nil {
-			result = make([][]byte, 0)
+			result = make([]*PkgData, 0)
 		}
 		result = append(result, resultData)
 	}
@@ -83,9 +99,9 @@ func (p *Parser) Parse(data []byte, num int) ([][]byte){
 		resultData, left = p.parse(data[start:num], left)
 		if (resultData != nil){
 			if result == nil {
-				result = make([][]byte, 0)
+				result = make([]*PkgData, 0)
 			}
-			fmt.Printf("get a resultData 2\n")
+			//fmt.Printf("get a resultData 2\n")
 			result = append(result, resultData)
 		}
 	}
@@ -95,36 +111,14 @@ func (p *Parser) Parse(data []byte, num int) ([][]byte){
 
 
 
-func main(){
-	jsonData := []byte(`{"Name":"Jason","Age": 22, "Location":"hangzhou"}`)
-	var grid Person
-	json.Unmarshal(jsonData, &grid)
+func (p *Parser) encode(data []byte)(result []byte){
+	sendData := make([]byte, 0)
+	var lengthBytes []byte
+	binary.LittleEndian.PutUint32(lengthBytes, uint32(len(data)))
+	sendData = append(sendData, lengthBytes...)
+	sendData = append(sendData, data...)
 
-	packet := make([]byte, 0)
-	lengthArray := make([]byte, 4)
-	binary.BigEndian.PutUint32(lengthArray, uint32(len(jsonData)))
-	fmt.Println(lengthArray)
-	fmt.Println(len(jsonData))
-	packet = append(packet, lengthArray...)
-	packet = append(packet, jsonData...)
-	fmt.Println(packet)
-
-	var p Parser
-	result := p.Parse(packet, len(packet))
-
-	for i:=0; i<len(result); i++{
-		data := result[i]
-		//fmt.Printf(string(data))
-		fmt.Printf("data of result\n")
-		fmt.Println(data)
-		fmt.Println(jsonData)
-		var person Person
-		json.Unmarshal(data, &person)
-
-		fmt.Printf("Name:%s\n", person.Name)
-		fmt.Printf("Age:%d\n", person.Age)
-		fmt.Printf("Location:%s\n", person.Location)
-	}
+	return sendData
 }
 
 
