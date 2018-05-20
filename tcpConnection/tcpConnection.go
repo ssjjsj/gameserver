@@ -30,45 +30,52 @@ func Create(conn net.Conn, messageChan chan parse.PkgData)(connection TcpConnect
 }
 
 func (tcpConn TcpConnection)recv(){
-	n, err := tcpConn.conn.Read(tcpConn.recvBuf)
-	if err != nil {
-		fmt.Printf("error %s\n", err.Error())
-	}
-	fmt.Printf("receive data length:%d\n", n)
-	//fmt.Println(string(tcpConn.recvBuf))
-	//fmt.Println(tcpConn.recvBuf)
-
-	result := tcpConn.parser.Parse(tcpConn.recvBuf, n)
-	for i:=0; i<len(result); i++{
-		var d *parse.PkgData = result[i]
-		//var output JsonData
-		//json.Unmarshal(data, &output)
-		//fmt.Println(output.uid)
-		tcpConn.messageChan <- *d 
-		fmt.Printf("data:%s\n", string(d.Data))
+	for{
+		n, err := tcpConn.conn.Read(tcpConn.recvBuf)
+		if err != nil {
+			fmt.Printf("error %s\n", err.Error())
+		}
+		fmt.Printf("receive data length:%d\n", n)
+		//fmt.Println(string(tcpConn.recvBuf))
+		//fmt.Println(tcpConn.recvBuf)
+	
+		result := tcpConn.parser.Parse(tcpConn.recvBuf, n)
+		for i:=0; i<len(result); i++{
+			var d *parse.PkgData = result[i]
+			//var output JsonData
+			//json.Unmarshal(data, &output)
+			//fmt.Println(output.uid)
+			tcpConn.messageChan <- *d 
+			fmt.Printf("data:%s\n", string(d.Data))
+		}
 	}
 }
 
 
 func (tcpConn TcpConnection)send(){
-	data := <- tcpConn.sendChannel
-	needSendLength := len(data)
 	for{
-		sendLength, err := tcpConn.conn.Write(data)
-		if err != nil {
-			fmt.Printf("send error:%s\n", err)
-		}
-		if sendLength == needSendLength{
-			break
-		}else{
-			needSendLength -= sendLength
-			data = data[sendLength:needSendLength]
+		data := <- tcpConn.sendChannel
+		fmt.Printf("start send data:%d\n", len(data))
+		needSendLength := len(data)
+		for{
+			sendLength, err := tcpConn.conn.Write(data)
+			if err != nil {
+				fmt.Printf("send error:%s\n", err)
+			}
+			fmt.Printf("already send %d\n", sendLength)
+			if sendLength == needSendLength{
+				break
+			}else{
+				needSendLength -= sendLength
+				data = data[sendLength:needSendLength]
+			}
 		}
 	}
 }
 
 
-func (tcpConn TcpConnection)Send(data []byte){
+func (tcpConn TcpConnection)Send(id int, data []byte){
+	data = tcpConn.parser.Encode(id, data)
 	tcpConn.sendChannel <- data
 }
 

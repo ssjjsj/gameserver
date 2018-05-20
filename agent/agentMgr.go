@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"net"
 	"gameserver/tcpListener"
 	"fmt"
 )
@@ -19,16 +18,14 @@ func Start(){
 
 
 func waitForCreateAgent(){
-	var conn net.Conn
-	conn = <- tcpListener.AcceptWiat
-	fmt.Printf("start create agent\n")
-	for conn != nil{
+	for {
+		conn := <- tcpListener.AcceptWiat
+		fmt.Printf("start create agent\n")
 		agent := CreateAgent(conn)
 		agent.id = curId
 		curId++
 		agents[agent.id] = agent
 		fmt.Printf("create agent:%d\n", agent.id)
-		conn = <- tcpListener.AcceptWiat
 	}
 }
 

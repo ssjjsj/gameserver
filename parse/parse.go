@@ -111,11 +111,14 @@ func (p *Parser) Parse(data []byte, num int) ([]*PkgData){
 
 
 
-func (p *Parser) encode(data []byte)(result []byte){
+func (p *Parser) Encode(id int, data []byte)(result []byte){
 	sendData := make([]byte, 0)
-	var lengthBytes []byte
-	binary.LittleEndian.PutUint32(lengthBytes, uint32(len(data)))
+	var lengthBytes []byte = make([]byte, 4)
+	binary.LittleEndian.PutUint32(lengthBytes, uint32(len(data)+4))
+	var idBytes []byte = make([]byte, 4)
+	binary.LittleEndian.PutUint32(idBytes, uint32(id))
 	sendData = append(sendData, lengthBytes...)
+	sendData = append(sendData, idBytes...)
 	sendData = append(sendData, data...)
 
 	return sendData
