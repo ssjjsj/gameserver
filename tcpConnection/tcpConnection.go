@@ -35,7 +35,7 @@ func (tcpConn TcpConnection)recv(){
 		if err != nil {
 			fmt.Printf("error %s\n", err.Error())
 		}
-		fmt.Printf("receive data length:%d\n", n)
+		//fmt.Printf("receive data length:%d\n", n)
 		//fmt.Println(string(tcpConn.recvBuf))
 		//fmt.Println(tcpConn.recvBuf)
 	
@@ -46,7 +46,7 @@ func (tcpConn TcpConnection)recv(){
 			//json.Unmarshal(data, &output)
 			//fmt.Println(output.uid)
 			tcpConn.messageChan <- *d 
-			fmt.Printf("data:%s\n", string(d.Data))
+			//fmt.Printf("data:%s\n", string(d.Data))
 		}
 	}
 }
@@ -55,14 +55,14 @@ func (tcpConn TcpConnection)recv(){
 func (tcpConn TcpConnection)send(){
 	for{
 		data := <- tcpConn.sendChannel
-		fmt.Printf("start send data:%d\n", len(data))
+		//fmt.Printf("start send data:%d\n", len(data))
 		needSendLength := len(data)
 		for{
 			sendLength, err := tcpConn.conn.Write(data)
 			if err != nil {
 				fmt.Printf("send error:%s\n", err)
 			}
-			fmt.Printf("already send %d\n", sendLength)
+			//fmt.Printf("already send %d\n", sendLength)
 			if sendLength == needSendLength{
 				break
 			}else{

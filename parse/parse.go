@@ -2,7 +2,7 @@ package parse
 
 import (
 	"encoding/binary"
-	"fmt"
+	//"fmt"
 )
 
 const (
@@ -34,7 +34,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 	var resultData *PkgData = nil
 	left := 0
 	if (p.curStatus == WaitForLength){
-		fmt.Println("WaitForHead")
+		//fmt.Println("WaitForHead")
 		if (num + p.curHeadLength >= headLength){
 			needHeadDataLength := headLength - p.curHeadLength
 			if p.curHeadData == nil {
@@ -45,7 +45,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			}
 		
 			length := binary.LittleEndian.Uint32(p.curHeadData[0:4])
-			fmt.Printf("need data:%d\n", length)
+			//fmt.Printf("need data:%d\n", length)
 			p.needDataLength = int(length)
 			p.curStatus = WaitForData
 			p.curHeadLength = 0
@@ -63,7 +63,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			left = 0
 		}
 	}else{
-		fmt.Println("WaitForData")
+		//fmt.Println("WaitForData")
 		if (p.curDataLength + num >= p.needDataLength){
 			p.curData = append(p.curData, data[0:p.needDataLength]...)
 			p.curStatus = WaitForLength

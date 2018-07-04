@@ -1,6 +1,7 @@
 package gamelogic
 
 import (
+	"fmt"
 	"encoding/json"
 	//"gameserver/event"
 	"gameserver/agent"
@@ -10,34 +11,29 @@ type Player struct{
 	x float32
 	y float32
 	id int
-	agent agent.Agent
-}
-
-type SyncDataS_C struct{
-	x float32
-	y float32
-	playerId int
+	agentId int
 }
 
 
 type SyncDataC_S struct{
-	x float32
-	y float32
+	PosX float32
+	PosY float32
 }
 
 
 type NewPlayerSync struct{
-	playerId int
+	PlayerId int
 }
 
-func Create(id int, netAgent agent.Agent)(Player){
+func Create(id int, agentId int)(Player){
 	var player Player
 	player.id = id
-	player.agent = netAgent
+	player.agentId = agentId
 
 	var newPlayerSyncData NewPlayerSync
-	newPlayerSyncData.playerId = id
-	player.agent.SendMessage(0, newPlayerSyncData)
+	newPlayerSyncData.PlayerId = id
+	fmt.Println("create player and send message to client")
+	agent.GetAgent(player.agentId).SendMessage(0, newPlayerSyncData)
 
 	player.agent.AddNetEventHandler(2, func(data agent.PackageData){
 		player.onSync(data)
@@ -60,11 +56,9 @@ func (player Player)SetPosition(x float32, y float32){
 }
 
 
-func (player Player)Sync(){
-	var syncData SyncDataS_C
-	syncData.x = player.x
-	syncData.y = player.y
-	syncData.playerId = player.id
+func (player Player)Sync(syncData SyncDataS_C){
+	temp := fmt.Sprintf("%d", syncData.PlayerId)
+	fmt.Println("syncdata:"+temp)
 	player.agent.SendMessage(1, syncData)
 }
 
@@ -74,7 +68,7 @@ func (player Player)onSync(data agent.PackageData){
 	pkgData :=  data.([]byte)
 	err := json.Unmarshal(pkgData, syncData)
 	if err != nil {
-		player.SetPosition(syncData.x, syncData.y)
+		player.SetPosition(syncData.PosX, syncData.PosY)
 		SyncAllPlayer()
 	}
 }
