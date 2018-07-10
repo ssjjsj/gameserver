@@ -1,8 +1,6 @@
 package module
 import (
 	"fmt"
-	//"fmt"
-	"time"
 )
 //data format
 /*
@@ -10,31 +8,30 @@ moudoule name string
 function name net, addplayer
 data netpackage function argment
 */
-
 type CallArg struct{
 	FunctionName string
 	Args interface{}
 }
 
-type CallBackFunc func (interface{})
+type CallBackFunc func (arg CallArg)
 type RunAble func()
+
+type PackageData interface{
+
+}
+
+type NetEventHandler func(PackageData)
 
 type Module struct{
 	moduleName string
 	mailbox MailBox
-	timer* time.Timer
-	runFunc RunAble
+	handerMap map[int][]NetEventHandler
 }
 
 
-func (m Module)Start(messageHandler CallBackFunc, runHandler RunAble, onInit RunAble, onDestroy RunAble){
+func (m Module)Start(messageHandler CallBackFunc, onInit RunAble, onDestroy RunAble){
 	onInit()
 	m.mailbox.Init(messageHandler)
-
-	if runHandler != nil{
-		m.runFunc = runHandler
-		m.timer = time.NewTimer(time.Millisecond)
-	}
 
 	go m.ModuleFunc()
 }
@@ -42,18 +39,9 @@ func (m Module)Start(messageHandler CallBackFunc, runHandler RunAble, onInit Run
 
 func (m Module) ModuleFunc(){
 	for{
-		if m.timer != nil {
-			select{
-			case data := <-m.mailbox.box:
-				m.mailbox.PopMessage(data)
-			}
-		}else{
-			select {
-			case data := <-m.mailbox.box:
-				m.mailbox.PushMessage(data)
-			case  <- m.timer.C:
-				m.runFunc()
-			}
+		select{
+		case data := <-m.mailbox.box:
+			m.mailbox.PopMessage(data)
 		}
 	}
 }
@@ -61,6 +49,34 @@ func (m Module) ModuleFunc(){
 
 func (m Module)Call(data CallArg){
 	m.mailbox.PushMessage(data)
+}
+
+
+
+func (m Module)AddNetEventHandler(id int, handler NetEventHandler){
+	handlerList, exits := m.handerMap[id] 
+	if exits == false{
+		m.handerMap[id] = make([]NetEventHandler, 0)
+		handlerList = m.handerMap[id]
+	}
+
+	m.handerMap[id] = append(handlerList, handler)
+}
+
+
+func (m Module)RemoveNetEventHandler(id int){
+	delete(m.handerMap, id)
+}
+
+
+func (m Module)DispatchEvent(id int, data PackageData){
+	handlerList, exits := m.handerMap[id]
+	if (exits){
+		for i:=0; i<len(handlerList); i++ {
+			handler := handlerList[i]
+			handler(data)
+		}
+	}
 }
 
 
@@ -82,7 +98,7 @@ func (m MailBox) PushMessage(data CallArg){
 }
 
 
-func (m MailBox) PopMessage(data interface{}){
+func (m MailBox) PopMessage(data CallArg){
 	m.handler(data)
 }
 
@@ -92,16 +108,19 @@ func init(){
 	modules = make(map[string]Module)
 } 
 
-func StartModule(name string, messageHandler CallBackFunc, runHandler RunAble, onInit RunAble, onDestroy RunAble){
+func StartModule(name string, messageHandler CallBackFunc, onInit RunAble, onDestroy RunAble)(Module){
 	_, exits := modules[name]
 	if exits {
 		fmt.Printf("error, %s alreay exits", name)
-		return
+		return modules[name]
 	}
 
 	var m Module
 	m.moduleName = name
-	m.Start(messageHandler, runHandler, onInit, onDestroy)
+	m.handerMap = make(map[int][]NetEventHandler)
+	m.Start(messageHandler, onInit, onDestroy)
+
+	return m
 }
 
 

@@ -35,7 +35,7 @@ func Create(id int, agentId int)(Player){
 	fmt.Println("create player and send message to client")
 	agent.GetAgent(player.agentId).SendMessage(0, newPlayerSyncData)
 
-	player.agent.AddNetEventHandler(2, func(data agent.PackageData){
+	thisModule.AddNetEventHandler(2, func(data agent.PackageData){
 		player.onSync(data)
 	})
 
@@ -45,7 +45,7 @@ func Create(id int, agentId int)(Player){
 
 
 func (player Player)Remove(){
-	player.agent.RemoveNetEventHandler(player.id)
+	thisModule.RemoveNetEventHandler(player.id)
 }
 
 
