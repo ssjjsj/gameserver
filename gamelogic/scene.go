@@ -6,6 +6,7 @@ import (
 	//"gameserver/agent"
 	//"encoding/json"
 	"gameserver/module"
+	"gameserver/timer"
 )
 
 var scene *Scene
@@ -71,8 +72,17 @@ func SyncAllPlayer(){
 }
 
 
+func onTimer(){
+	SyncAllPlayer()
+}
+
+
 func OnInit(){
 	CreateScene()
+	var arg timer.TimerArg
+	arg.ModuleName = "scene"
+	arg.Duration = 1 
+	module.ModuleCall("timer", "AddTimer", arg)
 }
 
 
@@ -85,6 +95,8 @@ func MessageHandler(data module.CallArg){
 		agentId = data.Args.(int)
 		scene.AddPlayer(curId, agentId)
 		curId = curId + 1
+	}else if data.FunctionName == "onTimer"{
+		onTimer()
 	}
 }
 

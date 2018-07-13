@@ -1,7 +1,6 @@
 package agent
 import (
 	"fmt"
-	"gameserver/event"
 	"net"
 	//"fmt"
 	"gameserver/tcpConnection"
@@ -25,7 +24,7 @@ func CreateAgent(conn net.Conn)(Agent){
 	agent.waitMessage = make(chan parse.PkgData)
 	agent.tcpConn = tcpConnection.Create(conn, agent.waitMessage)
 	fmt.Println("on crete agent and send add player event")
-	event.DispatchEvent(EventAgentCreate, agent)
+	module.ModuleCall("scene", "AddPlayer", agent.id)
 	go agent.wiatForMessage()
 	return agent
 }

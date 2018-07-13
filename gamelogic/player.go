@@ -1,6 +1,7 @@
 package gamelogic
 
 import (
+	"gameserver/module"
 	"fmt"
 	"encoding/json"
 	//"gameserver/event"
@@ -35,7 +36,7 @@ func Create(id int, agentId int)(Player){
 	fmt.Println("create player and send message to client")
 	agent.GetAgent(player.agentId).SendMessage(0, newPlayerSyncData)
 
-	thisModule.AddNetEventHandler(2, func(data agent.PackageData){
+	thisModule.AddNetEventHandler(2, func(data module.PackageData){
 		player.onSync(data)
 	})
 
@@ -59,16 +60,15 @@ func (player Player)SetPosition(x float32, y float32){
 func (player Player)Sync(syncData SyncDataS_C){
 	temp := fmt.Sprintf("%d", syncData.PlayerId)
 	fmt.Println("syncdata:"+temp)
-	player.agent.SendMessage(1, syncData)
+	agent.GetAgent(player.agentId).SendMessage(1, syncData)
 }
 
 
-func (player Player)onSync(data agent.PackageData){
+func (player Player)onSync(data module.PackageData){
 	var syncData SyncDataC_S
 	pkgData :=  data.([]byte)
 	err := json.Unmarshal(pkgData, syncData)
 	if err != nil {
 		player.SetPosition(syncData.PosX, syncData.PosY)
-		SyncAllPlayer()
 	}
 }
