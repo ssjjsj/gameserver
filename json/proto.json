@@ -1,0 +1,35 @@
+
+{
+    "protos" :
+    [
+        {
+            "protoname" : "s_c_add_new_player",
+            "id" : "0",
+            "playerId" : 1
+        },
+
+
+        {
+            "protoname" : "s_c_sync_pos",
+            "moduleName" : "scene",
+            "id" : "1",
+            "playerId" : 1,
+            "x" : 1.0,
+            "y" : 2.0
+        },
+        
+        
+        {
+            "protoname" : "c_s_change_pos",
+            "id" : "2",
+            "x" : 1.0,
+            "y" : 2.0
+        }
+    ]
+}
+
+
+
+
+
+
