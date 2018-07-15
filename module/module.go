@@ -1,6 +1,8 @@
 package module
 import (
 	"fmt"
+	"gameserver/parse"
+	//"gameserver/protojsonUtils"
 )
 //data format
 /*
@@ -8,6 +10,9 @@ moudoule name string
 function name net, addplayer
 data netpackage function argment
 */
+var initChannel chan int
+var initEndChannel chan int
+
 type CallArg struct{
 	FunctionName string
 	Args interface{}
@@ -16,44 +21,52 @@ type CallArg struct{
 type CallBackFunc func (arg CallArg)
 type RunAble func()
 
-type PackageData interface{
-
-}
-
-type NetEventHandler func(PackageData)
+type NetEventHandler func(data[] byte)
 
 type Module struct{
 	moduleName string
-	mailbox MailBox
+	box chan CallArg
+	handler CallBackFunc
+	destroyHandler RunAble
+	initHandler RunAble
 	handerMap map[int][]NetEventHandler
 }
 
 
-func (m Module)Start(messageHandler CallBackFunc, onInit RunAble, onDestroy RunAble){
-	onInit()
-	m.mailbox.Init(messageHandler)
-
-	go m.ModuleFunc()
+func (m *Module)Start(){
+	m.box = make(chan CallArg, 1)
+	go ModuleFunc(m)
 }
 
 
-func (m Module) ModuleFunc(){
+func ModuleFunc(m *Module){
+	m.initHandler()
 	for{
-		select{
-		case data := <-m.mailbox.box:
-			m.mailbox.PopMessage(data)
+		//fmt.Println("start wait for data:"+m.moduleName)
+		data := <- m.box
+		//fmt.Println("receive message on:"+m.moduleName + data.FunctionName)
+		if m.handler == nil {
+			fmt.Println("error handler nil")
 		}
+		if data.FunctionName == "net" {
+			var packageData parse.PkgData
+			packageData = data.Args.(parse.PkgData)
+			id := packageData.Id
+			m.DispatchEvent(id, packageData.Data)
+		}
+		m.handler(data)
 	}
 }
 
 
-func (m Module)Call(data CallArg){
-	m.mailbox.PushMessage(data)
+func (m *Module)Call(data CallArg){
+	//fmt.Println("send data to:"+m.moduleName)
+	m.box <- data
 }
 
 
 
-func (m Module)AddNetEventHandler(id int, handler NetEventHandler){
+func (m *Module)AddNetEventHandler(id int, handler NetEventHandler){
 	handlerList, exits := m.handerMap[id] 
 	if exits == false{
 		m.handerMap[id] = make([]NetEventHandler, 0)
@@ -64,12 +77,12 @@ func (m Module)AddNetEventHandler(id int, handler NetEventHandler){
 }
 
 
-func (m Module)RemoveNetEventHandler(id int){
+func (m *Module)RemoveNetEventHandler(id int){
 	delete(m.handerMap, id)
 }
 
 
-func (m Module)DispatchEvent(id int, data PackageData){
+func (m *Module)DispatchEvent(id int, data []byte){
 	handlerList, exits := m.handerMap[id]
 	if (exits){
 		for i:=0; i<len(handlerList); i++ {
@@ -80,56 +93,41 @@ func (m Module)DispatchEvent(id int, data PackageData){
 }
 
 
-
-
-
-type MailBox struct{
-	box chan CallArg
-	handler CallBackFunc	
-}
-
-func (m MailBox) Init(handler CallBackFunc){
-	m.box = make(chan CallArg, 1)
-	m.handler = handler
-}
-
-func (m MailBox) PushMessage(data CallArg){
-	m.box <- data 
-}
-
-
-func (m MailBox) PopMessage(data CallArg){
-	m.handler(data)
-}
-
-
-var modules map[string]Module
+var modules map[string]*Module
+var moduleList []*Module
 func init(){
-	modules = make(map[string]Module)
+	modules = make(map[string]*Module)
 } 
 
-func StartModule(name string, messageHandler CallBackFunc, onInit RunAble, onDestroy RunAble)(Module){
+func RegistModule(name string, messageHandler CallBackFunc, onInit RunAble, onDestroy RunAble)(*Module){
 	_, exits := modules[name]
 	if exits {
-		fmt.Printf("error, %s alreay exits", name)
+		fmt.Printf("error, %s alreay exits\n", name)
 		return modules[name]
 	}
 
+	//fmt.Printf("create module:%s\n", name)
 	var m Module
 	m.moduleName = name
+	m.destroyHandler = onDestroy
+	m.initHandler = onInit
+	m.handler = messageHandler
 	m.handerMap = make(map[int][]NetEventHandler)
-	m.Start(messageHandler, onInit, onDestroy)
+	modules[name] = &m
+	moduleList = append(moduleList, &m)
 
-	return m
+	return &m
 }
 
 
 func ModuleCall(mouduleName string, funcName string, data interface{}){
 	m, exits := modules[mouduleName]
 	if exits == false {
-		fmt.Printf("error, %s not exits", mouduleName)
+		fmt.Printf("error, %s not exits\n", mouduleName)
 		return
 	}
+
+	//fmt.Println("ModuleCall:"+"moduleName:"+mouduleName+",functionName:"+funcName)
 
 	var arg CallArg
 	arg.FunctionName = funcName
@@ -137,3 +135,30 @@ func ModuleCall(mouduleName string, funcName string, data interface{}){
 
 	m.Call(arg)
 }
+
+func StartAllModule(){
+	modulesStart()
+}
+
+
+func modulesStart(){
+	for i:=0; i<len(moduleList); i++{
+		moduleList[i].Start()
+	}
+}
+
+
+// func moduleInit(){
+// 	initNum := 0
+// 	for {
+// 		<- initEndChannel
+// 		initNum = initNum + 1
+// 		if initNum == len(moduleList) {
+// 			for i:=0; i<len(moduleList); i++{
+// 				if moduleList[i].initHandler != nil {
+// 					moduleList[i].initHandler()
+// 				}
+// 			} 
+// 		}
+// 	}
+// }

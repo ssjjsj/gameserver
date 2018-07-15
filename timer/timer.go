@@ -3,6 +3,7 @@ package timer
 import(
 	"gameserver/module"
 	"time"
+	"fmt"
 )
 
 type TimerArg struct{
@@ -11,16 +12,19 @@ type TimerArg struct{
 }
 
 
-var timerMap map[string]*time.Timer
+var moduleList []string
 
 
-func init(){
-	module.StartModule("timer", MessageHandler, OnInit, OnDestroy)
+func InitTimerModule(){
+	module.RegistModule("timer", MessageHandler, OnInit, OnDestroy)
 }
 
 
 func OnInit(){
-	//timerMap = make(map[string]*time.Timer)
+	moduleList = make([]string, 0)
+	timer := time.Tick(time.Second)
+
+	go onTimer(timer)
 }
 
 
@@ -29,20 +33,23 @@ func OnDestroy(){
 
 
 func MessageHandler(data module.CallArg){
-	if data.FunctionName == "AddTimer" {
-		var arg TimerArg
-		arg = data.Args.(TimerArg)
-		timer := time.NewTimer(arg.Duration)
-		//timerMap[arg.moduleName] = timer
-
-		go onTimer(arg.ModuleName, timer)
+	fmt.Println("timer on message handle:"+data.FunctionName)
+	if data.FunctionName == "AddTimer"{
+		var timerArg = data.Args.(TimerArg)
+		moduleList = append(moduleList, timerArg.ModuleName)
+		fmt.Println(timerArg.ModuleName+" add timer")
 	}
 }
 
 
-func onTimer(moduleName string, timer *time.Timer){
+func onTimer(timer <-chan time.Time){
 	for{
-		_ : <- timer.C
-		module.ModuleCall(moduleName, "onTimer", nil)
+		<- timer
+		//fmt.Println("timer on time")
+		for i:=0; i<len(moduleList); i++{
+			moduleName := moduleList[i]
+			//fmt.Println("on timer:"+moduleName)
+			module.ModuleCall(moduleName, "onTimer", nil)
+		}
 	}
 }

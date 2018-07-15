@@ -36,8 +36,8 @@ func (agent Agent)wiatForMessage(){
 		//fmt.Printf("id:%d, data:%s\n", pkgData.Id, string(pkgData.Data))
 		js, err := simplejson.NewJson(pkgData.Data)
 		if err != nil {
-			moduleName := js.Get("moduleName").MustString()
-			module.ModuleCall(moduleName, "net", pkgData.Data)
+			moduleName := js.Get("Module").MustString()
+			module.ModuleCall(moduleName, "net", pkgData)
 		}
 		//agent.DispatchEvent(pkgData.Id, pkgData.Data)
 	}

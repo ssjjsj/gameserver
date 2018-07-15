@@ -1,7 +1,7 @@
 package gamelogic
 
 import (
-	//"fmt"
+	"fmt"
 	//"gameserver/event"
 	//"gameserver/agent"
 	//"encoding/json"
@@ -11,7 +11,7 @@ import (
 
 var scene *Scene
 var curId int
-var thisModule module.Module
+var thisModule *module.Module
 
 type Scene struct{
 	players map[int]Player
@@ -24,22 +24,14 @@ type SyncDataS_C struct{
 }
 
 
-func init(){
-	thisModule = module.StartModule("scene", MessageHandler, OnInit, OnDestroy)
+func InitSceneModule(){
+	thisModule = module.RegistModule("scene", MessageHandler, OnInit, OnDestroy)
 }
 
 
 func CreateScene(){
 	scene = new (Scene)
 	scene.players = make(map[int]Player)
-	// event.AddEventListener(agent.EventAgentCreate, func(data event.EventData){
-	// 	fmt.Println("receive create player event")
-	// 	netAgent, b := data.(agent.Agent)
-	// 	if b{
-	// 		scene.AddPlayer(curId, netAgent)
-	// 		curId = curId + 1
-	// 	}
-	// })
 }
 
 
@@ -73,6 +65,7 @@ func SyncAllPlayer(){
 
 
 func onTimer(){
+	fmt.Println("scene on timer")
 	SyncAllPlayer()
 }
 
