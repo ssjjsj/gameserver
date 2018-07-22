@@ -3,6 +3,7 @@
     "protos" :
     [
         {
+            "protoid" : "0",
             "protoname" : "s_c_add_new_player",
             "id" : "0",
             "playerId" : 1
@@ -10,6 +11,7 @@
 
 
         {
+            "protoid" : "1",
             "protoname" : "s_c_sync_pos",
             "moduleName" : "scene",
             "id" : "1",
@@ -20,10 +22,27 @@
         
         
         {
+            "protoid" : "2",
             "protoname" : "c_s_change_pos",
             "id" : "2",
             "x" : 1.0,
             "y" : 2.0
+        },
+
+
+        {
+            "protoid" : "3",
+            "protoname" : "c_s_hand_shake",
+            "id" : "3"
+        },
+
+
+        {
+            "protoid" : "4",
+            "protoname" : "s_c_hand_shake",
+            "id" : "4",
+            "recv_serverTime" : 1,
+            "send_serverTime" : 2
         }
     ]
 }

@@ -6,7 +6,7 @@ import (
 	"gameserver/tcpConnection"
 	"gameserver/parse"
 	"encoding/json"
-	"github.com/bitly/go-simplejson"
+	//"github.com/bitly/go-simplejson"
 	//"encoding/binary"
 	"gameserver/module"
 )
@@ -19,13 +19,14 @@ type Agent struct{
 	waitMessage chan parse.PkgData
 }
 
-func CreateAgent(conn net.Conn)(Agent){
+func CreateAgent(conn net.Conn, agentId int)(Agent){
 	var agent Agent
 	agent.waitMessage = make(chan parse.PkgData)
 	agent.tcpConn = tcpConnection.Create(conn, agent.waitMessage)
+	agent.id = agentId
 	fmt.Println("on crete agent and send add player event")
-	module.ModuleCall("scene", "AddPlayer", agent.id)
 	go agent.wiatForMessage()
+	module.ModuleCall("scene", "AddPlayer", agent.id)
 	return agent
 }
 
@@ -34,10 +35,20 @@ func (agent Agent)wiatForMessage(){
 	for {
 		pkgData := <- agent.waitMessage
 		//fmt.Printf("id:%d, data:%s\n", pkgData.Id, string(pkgData.Data))
-		js, err := simplejson.NewJson(pkgData.Data)
+		//js, err := simplejson.NewJson(pkgData.Data)
+		var v interface{}
+		err := json.Unmarshal(pkgData.Data, v)
 		if err != nil {
-			moduleName := js.Get("Module").MustString()
-			module.ModuleCall(moduleName, "net", pkgData)
+			//moduleName := js.Get("Module").MustString()
+			//fmt.Println("receive package from:"+moduleName)
+			var pkgArg module.PkgData
+			pkgArg.Id = pkgData.Id
+			pkgArg.Data = pkgData.Data
+			pkgArg.AgentId = agent.id
+			//module.ModuleCall(moduleName, "net", pkgArg)
+			module.ModuleCall("scene", "net", pkgArg)
+		}else{
+			fmt.Println(err)
 		}
 		//agent.DispatchEvent(pkgData.Id, pkgData.Data)
 	}

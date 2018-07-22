@@ -21,8 +21,7 @@ func waitForCreateAgent(){
 	for {
 		conn := <- tcpListener.AcceptWiat
 		fmt.Printf("start create agent\n")
-		agent := CreateAgent(conn)
-		agent.id = curId
+		agent := CreateAgent(conn, curId)
 		curId++
 		agents[agent.id] = agent
 		fmt.Printf("create agent:%d\n", agent.id)

@@ -33,7 +33,8 @@ func (tcpConn TcpConnection)recv(){
 	for{
 		n, err := tcpConn.conn.Read(tcpConn.recvBuf)
 		if err != nil {
-			fmt.Printf("error %s\n", err.Error())
+			//fmt.Printf("error %s\n", err.Error())
+			tcpConn.conn.Close()
 		}
 		//fmt.Printf("receive data length:%d\n", n)
 		//fmt.Println(string(tcpConn.recvBuf))
@@ -77,6 +78,11 @@ func (tcpConn TcpConnection)send(){
 func (tcpConn TcpConnection)Send(id int, data []byte){
 	data = tcpConn.parser.Encode(id, data)
 	tcpConn.sendChannel <- data
+}
+
+
+func (tcpConn TcpConnection) Close(){
+	tcpConn.conn.Close()
 }
 
 

@@ -1,7 +1,7 @@
 package module
 import (
 	"fmt"
-	"gameserver/parse"
+	//"gameserver/agent"
 	//"gameserver/protojsonUtils"
 )
 //data format
@@ -13,6 +13,12 @@ data netpackage function argment
 var initChannel chan int
 var initEndChannel chan int
 
+type PkgData struct{
+	Id int
+	Data []byte
+	AgentId int
+}
+
 type CallArg struct{
 	FunctionName string
 	Args interface{}
@@ -21,7 +27,7 @@ type CallArg struct{
 type CallBackFunc func (arg CallArg)
 type RunAble func()
 
-type NetEventHandler func(data[] byte)
+type NetEventHandler func(agentId int, data[] byte)
 
 type Module struct{
 	moduleName string
@@ -49,10 +55,12 @@ func ModuleFunc(m *Module){
 			fmt.Println("error handler nil")
 		}
 		if data.FunctionName == "net" {
-			var packageData parse.PkgData
-			packageData = data.Args.(parse.PkgData)
+			var packageData PkgData
+			packageData = data.Args.(PkgData)
 			id := packageData.Id
-			m.DispatchEvent(id, packageData.Data)
+			data := packageData.Data
+			agentId := packageData.AgentId
+			m.DispatchEvent(id, agentId, data)
 		}
 		m.handler(data)
 	}
@@ -82,12 +90,12 @@ func (m *Module)RemoveNetEventHandler(id int){
 }
 
 
-func (m *Module)DispatchEvent(id int, data []byte){
+func (m *Module)DispatchEvent(id int, agentId int, data []byte){
 	handlerList, exits := m.handerMap[id]
 	if (exits){
 		for i:=0; i<len(handlerList); i++ {
 			handler := handlerList[i]
-			handler(data)
+			handler(agentId, data)
 		}
 	}
 }

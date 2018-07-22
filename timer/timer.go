@@ -22,7 +22,7 @@ func InitTimerModule(){
 
 func OnInit(){
 	moduleList = make([]string, 0)
-	timer := time.Tick(time.Second)
+	timer := time.Tick(time.Millisecond*100)
 
 	go onTimer(timer)
 }
