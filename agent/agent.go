@@ -60,7 +60,7 @@ func (agent Agent)SendMessage(id int, data interface{}){
 	if err != nil {
 		fmt.Println(",json error on mes:")
 	}else{
-		fmt.Println(string(sendData))
+		//fmt.Println(string(sendData))
 		agent.tcpConn.Send(id, sendData)
 	}
 }

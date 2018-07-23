@@ -66,10 +66,10 @@ func (player Player)Sync(syncData SyncDataS_C){
 
 
 func (player Player)onSync(pkgData []byte){
-	var syncData SyncDataC_S
+	syncData := new(SyncDataC_S)
 	err := json.Unmarshal(pkgData, syncData)
-	if err != nil {
-		fmt.Println(string(pkgData))
+	if err == nil {
+		//fmt.Println(string(pkgData))
 		fmt.Println(syncData.PosX)
 		fmt.Println(syncData.PosY)
 		player.SetPosition(syncData.PosX, syncData.PosY)
@@ -79,5 +79,7 @@ func (player Player)onSync(pkgData []byte){
 		c.PlayerId = player.id
 		c.timeStep = syncData.TimeStep
 		AddSyncCommand(c)
+	}else{
+		fmt.Println("sync data json err:"+err.Error())
 	}
 }

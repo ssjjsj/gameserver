@@ -81,8 +81,6 @@ func SyncAllPlayer(){
 
 
 func AddSyncCommand(c SyncCommand){
-	temp := c.(PositionSyncCommand)
-	fmt.Println("add sync command:"+ string(int(temp.X))+","+string(int(temp.Y)))
 	scene.syncCommands = append(scene.syncCommands, c)
 }
 

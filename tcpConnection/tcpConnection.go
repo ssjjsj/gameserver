@@ -46,8 +46,9 @@ func (tcpConn TcpConnection)recv(){
 			//var output JsonData
 			//json.Unmarshal(data, &output)
 			//fmt.Println(output.uid)
+			//fmt.Println("data len in tcpconnection")
+			//fmt.Println(len(d.Data))
 			tcpConn.messageChan <- *d 
-			//fmt.Printf("data:%s\n", string(d.Data))
 		}
 	}
 }

@@ -53,6 +53,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			if p.curData == nil {
 				p.curData = make([]byte, 0)
 			}
+			p.curHeadData = make([]byte, 0)
 		}else
 		{
 			if p.curHeadData == nil {
@@ -70,6 +71,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			resultData = new(PkgData)
 			resultData.Id = int(binary.LittleEndian.Uint32(p.curData[:4]))
 			resultData.Data = p.curData[4:len(p.curData)]
+			p.curData = make([]byte, 0)
 			left = num - p.needDataLength
 		}else{
 			p.curData = append(p.curData, data[0:num]...)
@@ -77,6 +79,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			left = 0
 		}
 	}
+	//fmt.Printf("left:%d\n", left)
 	return resultData, left
 }
 
