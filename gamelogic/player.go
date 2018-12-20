@@ -36,6 +36,7 @@ func Create(id int, agentId int)(Player){
 	var newPlayerSyncData NewPlayerSync
 	newPlayerSyncData.PlayerId = id
 	agent.GetAgent(player.agentId).SendMessage(proto.S2C_ADDMAINPLAYER, newPlayerSyncData)
+	player.onSync(0, 0, "0")
 	fmt.Printf("create player and send message to client: %d\n", id)
 	return player
 }
