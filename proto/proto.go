@@ -1,0 +1,10 @@
+package proto
+
+const (
+	S2C_ADDMAINPLAYER = 0
+	S2C_SYNCPOS = 1
+	C2S_SYNCPOS = 2
+	C2S_SHAKE = 3
+	S2C_SHAKE = 4
+)
+

@@ -29,6 +29,10 @@ func waitForCreateAgent(){
 }
 
 
+func DeleteAgent(id int){
+	delete(agents, id)
+}
+
 func GetAgent(id int)(Agent){
 	agent, _ := agents[id]
 	return agent

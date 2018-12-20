@@ -15,14 +15,18 @@ type TcpConnection struct
 	parser parse.Parser
 	conn net.Conn
 	messageChan chan parse.PkgData
+	closeChan chan bool
+	agentCloseChan chan bool
 }
 
-func Create(conn net.Conn, messageChan chan parse.PkgData)(connection TcpConnection){
+func Create(conn net.Conn, messageChan chan parse.PkgData, agentCloseChan chan bool)(connection TcpConnection){
 	var tcpConn TcpConnection
 	tcpConn.conn = conn
 	tcpConn.sendChannel = make(chan []byte)
 	tcpConn.messageChan = messageChan
+	tcpConn.agentCloseChan = agentCloseChan
 	tcpConn.recvBuf = make([]byte, 1024)
+	tcpConn.closeChan = make(chan bool)
 	go tcpConn.recv()
 	go tcpConn.send()
 
@@ -35,6 +39,9 @@ func (tcpConn TcpConnection)recv(){
 		if err != nil {
 			//fmt.Printf("error %s\n", err.Error())
 			tcpConn.conn.Close()
+			tcpConn.closeChan <- true
+			tcpConn.agentCloseChan <- true
+			break
 		}
 		//fmt.Printf("receive data length:%d\n", n)
 		//fmt.Println(string(tcpConn.recvBuf))
@@ -56,22 +63,26 @@ func (tcpConn TcpConnection)recv(){
 
 func (tcpConn TcpConnection)send(){
 	for{
-		data := <- tcpConn.sendChannel
-		//fmt.Printf("start send data:%d\n", len(data))
-		needSendLength := len(data)
-		for{
-			sendLength, err := tcpConn.conn.Write(data)
-			if err != nil {
-				fmt.Printf("send error:%s\n", err)
+		select{
+		case data := <- tcpConn.sendChannel:
+			//fmt.Printf("start send data:%d\n", len(data))
+			needSendLength := len(data)
+			for{
+				sendLength, err := tcpConn.conn.Write(data)
+				if err != nil {
+					fmt.Printf("send error:%s\n", err)
+				}
+				//fmt.Printf("already send %d\n", sendLength)
+				if sendLength == needSendLength{
+					break
+				}else{
+					needSendLength -= sendLength
+					data = data[sendLength:needSendLength]
+				}
 			}
-			//fmt.Printf("already send %d\n", sendLength)
-			if sendLength == needSendLength{
-				break
-			}else{
-				needSendLength -= sendLength
-				data = data[sendLength:needSendLength]
-			}
-		}
+		case <- tcpConn.closeChan:
+			break
+		}		
 	}
 }
 

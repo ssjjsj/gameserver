@@ -2,7 +2,7 @@ package gamelogic
 
 import (
 	"fmt"
-	"encoding/json"
+	"gameserver/proto"
 	//"gameserver/event"
 	"gameserver/agent"
 )
@@ -17,6 +17,7 @@ type Player struct{
 
 type SyncDataC_S struct{
 	Module string
+	PlayerId int
 	PosX int
 	PosY int
 	TimeStep string
@@ -34,20 +35,13 @@ func Create(id int, agentId int)(Player){
 
 	var newPlayerSyncData NewPlayerSync
 	newPlayerSyncData.PlayerId = id
-	fmt.Println("create player and send message to client")
-	agent.GetAgent(player.agentId).SendMessage(0, newPlayerSyncData)
-
-	thisModule.AddNetEventHandler(2, func(agentId int, data []byte){
-		player.onSync(data)
-	})
-
-
+	agent.GetAgent(player.agentId).SendMessage(proto.S2C_ADDMAINPLAYER, newPlayerSyncData)
+	fmt.Printf("create player and send message to client: %d\n", id)
 	return player
 }
 
 
-func (player Player)Remove(){
-	thisModule.RemoveNetEventHandler(player.id)
+func (player Player)OnRemove(){
 }
 
 
@@ -59,27 +53,18 @@ func (player Player)SetPosition(x int, y int){
 
 
 func (player Player)Sync(syncData SyncDataS_C){
-	// temp := fmt.Sprintf("%d", syncData.PlayerId)
-	// fmt.Println("syncdata:"+temp)
-	agent.GetAgent(player.agentId).SendMessage(1, syncData)
+	fmt.Printf("send on agent:%d\n", player.agentId)
+	agent.GetAgent(player.agentId).SendMessage(proto.S2C_SYNCPOS, syncData)
 }
 
 
-func (player Player)onSync(pkgData []byte){
-	syncData := new(SyncDataC_S)
-	err := json.Unmarshal(pkgData, syncData)
-	if err == nil {
-		//fmt.Println(string(pkgData))
-		fmt.Println(syncData.PosX)
-		fmt.Println(syncData.PosY)
-		player.SetPosition(syncData.PosX, syncData.PosY)
-		var c PositionSyncCommand
-		c.X = syncData.PosX
-		c.Y = syncData.PosY
-		c.PlayerId = player.id
-		c.timeStep = syncData.TimeStep
-		AddSyncCommand(c)
-	}else{
-		fmt.Println("sync data json err:"+err.Error())
-	}
+func (player Player)onSync(PosX int, PosY int, TimeStep string){
+	player.SetPosition(PosX, PosY)
+	var c PositionSyncCommand
+	c.X = PosX
+	c.Y = PosY
+	c.PlayerId = player.id
+	c.timeStep = TimeStep
+	fmt.Printf("AddSyncCommand for player %d\n", player.id)
+	AddSyncCommand(c)
 }

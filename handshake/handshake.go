@@ -4,6 +4,7 @@ import (
 	"gameserver/agent"
 	"gameserver/module"
 	"time"
+	"gameserver/proto"
 )
 
 type SyncData struct{
@@ -19,10 +20,10 @@ func InitSceneModule(){
 
 
 func OnInit(){
-	thisModule.AddNetEventHandler(3, func(agentId int, data []byte){
+	thisModule.AddNetEventHandler(proto.C2S_SHAKE, func(agentId int, data []byte){
 		var syncData SyncData
 		syncData.ServerTime = time.Now().Unix()
-		agent.GetAgent(agentId).SendMessage(4, syncData)
+		agent.GetAgent(agentId).SendMessage(proto.S2C_SHAKE, syncData)
 	})
 }
 

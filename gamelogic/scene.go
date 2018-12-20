@@ -4,9 +4,10 @@ import (
 	"fmt"
 	//"gameserver/event"
 	//"gameserver/agent"
-	//"encoding/json"
+	"encoding/json"
 	"gameserver/module"
 	"gameserver/timer"
+	"gameserver/proto"
 )
 
 var scene *Scene
@@ -36,6 +37,25 @@ func CreateScene(){
 	scene = new (Scene)
 	scene.players = make(map[int]Player)
 	scene.syncCommands = make([]SyncCommand, 0)
+
+	thisModule.AddNetEventHandler(proto.C2S_SYNCPOS, func(agentId int, data []byte){
+		syncFromClient(data)
+	})
+}
+
+
+func syncFromClient(pkgData []byte){
+	syncData := new(SyncDataC_S)
+	err := json.Unmarshal(pkgData, syncData)
+	if err == nil {
+		//fmt.Println(string(pkgData))
+		fmt.Println(syncData.PosX)
+		fmt.Println(syncData.PosY)
+		player := scene.players[syncData.PlayerId]
+		player.onSync(syncData.PosX, syncData.PosY, syncData.TimeStep)
+	}else{
+		fmt.Println("sync data json err:"+err.Error())
+	}
 }
 
 
@@ -48,7 +68,8 @@ func (scene *Scene) AddPlayer(id int, agentId int){
 func (scene *Scene) RemovePlayer(id int){
 	player, exits := scene.players[id]
 	if exits != false {
-		player.Remove()
+		player.OnRemove()
+		delete(scene.players, id)
 	}
 }
 
@@ -68,14 +89,16 @@ func SyncAllPlayer(){
 	// 	}
 	// }
 
+	//fmt.Println("begin sync")
 	for i:=0; i<len(scene.syncCommands); i++{
 		c := scene.syncCommands[i]
 		syncData := c.BuildNetPackage().(SyncDataS_C)
 		for _, player := range scene.players{
-			fmt.Printf("sync data:%d\n", player.id)
+			fmt.Printf("sync player data:%d to player %d\n", syncData.PlayerId, player.id)
 			player.Sync(syncData)
 		}
 	}
+	//fmt.Println("end sync")
 	scene.syncCommands = scene.syncCommands[:0]
 }
 
@@ -116,6 +139,14 @@ func MessageHandler(data module.CallArg){
 		// 	fmt.Println("not has player")
 		// }
 		onTimer()
+	}else if data.FunctionName == "RemovePlayer"{
+		var agentId int
+		agentId = data.Args.(int)
+		for _, player := range scene.players{
+			if player.agentId == agentId {
+				scene.RemovePlayer(player.id)
+			}
+		}
 	}
 }
 
