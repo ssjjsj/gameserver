@@ -9,7 +9,8 @@ type PositionSyncCommand struct{
 	X int
 	Y int
 	PlayerId int
-	timeStep string
+	TimeStamp int
+	rotation [4]float32
 }
 
 
@@ -18,7 +19,8 @@ func (c PositionSyncCommand)BuildNetPackage()(interface{}){
 	syncData.PosX = c.X
 	syncData.PosY = c.Y
 	syncData.PlayerId = c.PlayerId
-	syncData.TimeStep = string(c.timeStep)
+	syncData.TimeStamp = c.TimeStamp
+	syncData.Rotation = c.rotation
 
 	return syncData
 }

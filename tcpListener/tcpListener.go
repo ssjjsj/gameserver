@@ -14,7 +14,7 @@ func init(){
 
 
 func Start(port int){
-	ln, err := net.Listen("tcp", ":3014")
+	ln, err := net.Listen("tcp", "0.0.0.0:3014")
 	if err != nil {
 		fmt.Printf("listen error:%s\n", err.Error())
 		return

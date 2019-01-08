@@ -20,7 +20,8 @@ type SyncDataC_S struct{
 	PlayerId int
 	PosX int
 	PosY int
-	TimeStep string
+	TimeStamp int
+	Rotation [4]float32
 }
 
 
@@ -36,7 +37,8 @@ func Create(id int, agentId int)(Player){
 	var newPlayerSyncData NewPlayerSync
 	newPlayerSyncData.PlayerId = id
 	agent.GetAgent(player.agentId).SendMessage(proto.S2C_ADDMAINPLAYER, newPlayerSyncData)
-	player.onSync(0, 0, "0")
+	rotation := [4]float32{0, 0, 0, 0}
+	player.onSync(0, 0, 0, rotation)
 	fmt.Printf("create player and send message to client: %d\n", id)
 	return player
 }
@@ -59,13 +61,14 @@ func (player Player)Sync(syncData SyncDataS_C){
 }
 
 
-func (player Player)onSync(PosX int, PosY int, TimeStep string){
+func (player Player)onSync(PosX int, PosY int, TimeStamp int, rotation [4]float32){
 	player.SetPosition(PosX, PosY)
 	var c PositionSyncCommand
 	c.X = PosX
 	c.Y = PosY
 	c.PlayerId = player.id
-	c.timeStep = TimeStep
-	fmt.Printf("AddSyncCommand for player %d\n", player.id)
+	c.TimeStamp = TimeStamp
+	c.rotation = rotation
+	//fmt.Printf("AddSyncCommand for player %d\n", player.id)
 	AddSyncCommand(c)
 }

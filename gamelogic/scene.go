@@ -24,7 +24,8 @@ type SyncDataS_C struct{
 	PosX int
 	PosY int
 	PlayerId int
-	TimeStep string
+	TimeStamp int
+	Rotation [4]float32
 }
 
 
@@ -49,10 +50,10 @@ func syncFromClient(pkgData []byte){
 	err := json.Unmarshal(pkgData, syncData)
 	if err == nil {
 		//fmt.Println(string(pkgData))
-		fmt.Println(syncData.PosX)
-		fmt.Println(syncData.PosY)
+		//fmt.Println(syncData.PosX)
+		//fmt.Println(syncData.PosY)
 		player := scene.players[syncData.PlayerId]
-		player.onSync(syncData.PosX, syncData.PosY, syncData.TimeStep)
+		player.onSync(syncData.PosX, syncData.PosY, syncData.TimeStamp, syncData.Rotation)
 	}else{
 		fmt.Println("sync data json err:"+err.Error())
 	}

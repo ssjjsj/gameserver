@@ -30,7 +30,6 @@ type PkgData struct{
 
 
 func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
-	//fmt.Println(num)
 	var resultData *PkgData = nil
 	left := 0
 	if (p.curStatus == WaitForLength){
@@ -45,6 +44,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 			}
 		
 			length := binary.LittleEndian.Uint32(p.curHeadData[0:4])
+			//fmt.Printf("head data %d, %d, %d, %d\n", p.curHeadData[0], p.curHeadData[1], p.curHeadData[2], p.curHeadData[3])
 			//fmt.Printf("need data:%d\n", length)
 			p.needDataLength = int(length)
 			p.curStatus = WaitForData
@@ -54,8 +54,7 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 				p.curData = make([]byte, 0)
 			}
 			p.curHeadData = make([]byte, 0)
-		}else
-		{
+		}else{
 			if p.curHeadData == nil {
 				p.curHeadData = make([]byte, 0)
 			}
@@ -66,13 +65,17 @@ func (p *Parser) parse(data []byte, num int) (*PkgData, int) {
 	}else{
 		//fmt.Println("WaitForData")
 		if (p.curDataLength + num >= p.needDataLength){
-			p.curData = append(p.curData, data[0:p.needDataLength]...)
-			p.curStatus = WaitForLength
+			//fmt.Printf("curData len:%d needDataLength %d curDataLength %d\n", len(p.curData), p.needDataLength, p.curDataLength)
+			readLength := p.needDataLength - p.curDataLength
+			p.curData = append(p.curData, data[0:readLength]...)
 			resultData = new(PkgData)
 			resultData.Id = int(binary.LittleEndian.Uint32(p.curData[:4]))
 			resultData.Data = p.curData[4:len(p.curData)]
+			
 			p.curData = make([]byte, 0)
-			left = num - p.needDataLength
+			p.curDataLength = 0
+			p.curStatus = WaitForLength
+			left = num - readLength
 		}else{
 			p.curData = append(p.curData, data[0:num]...)
 			p.curDataLength = p.curDataLength + num

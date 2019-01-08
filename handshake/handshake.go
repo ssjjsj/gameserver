@@ -8,7 +8,7 @@ import (
 )
 
 type SyncData struct{
-	ServerTime int64
+	Time int64
 }
 
 var thisModule *module.Module
@@ -22,7 +22,7 @@ func InitSceneModule(){
 func OnInit(){
 	thisModule.AddNetEventHandler(proto.C2S_SHAKE, func(agentId int, data []byte){
 		var syncData SyncData
-		syncData.ServerTime = time.Now().Unix()
+		syncData.Time = time.Now().Unix()
 		agent.GetAgent(agentId).SendMessage(proto.S2C_SHAKE, syncData)
 	})
 }

@@ -47,6 +47,8 @@ func (tcpConn TcpConnection)recv(){
 		//fmt.Println(string(tcpConn.recvBuf))
 		//fmt.Println(tcpConn.recvBuf)
 	
+		//fmt.Printf("read num%d\n", n)
+		//fmt.Println(tcpConn.recvBuf[:n])
 		result := tcpConn.parser.Parse(tcpConn.recvBuf, n)
 		for i:=0; i<len(result); i++{
 			var d *parse.PkgData = result[i]
